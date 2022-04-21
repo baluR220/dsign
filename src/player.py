@@ -11,7 +11,7 @@ class Player(tk.Tk):
     def __init__(self):
         root_win = tk.Tk()
         root_win.geometry("600x600+0+0")
-        #root_win.wm_attributes("-fullscreen", True)
+        root_win.wm_attributes("-fullscreen", True)
         root_win.update()
 
         ttk.Style().configure(
@@ -21,9 +21,9 @@ class Player(tk.Tk):
             "Custom.TButton", background=btn_color
         )
 
-        fw_width = root_win.winfo_width()
+        fw_width = int(root_win.winfo_width() * 0.8)
         fw_height = int(root_win.winfo_height() * 0.1)
-        fw_x = root_win.winfo_x()
+        fw_x = int(root_win.winfo_x() + root_win.winfo_width() * 0.1)
         fw_y = int(root_win.winfo_y() + root_win.winfo_height() - fw_height)
         fade_win = tk.Toplevel(root_win)
         fade_win.geometry(f"{fw_width}x{fw_height}+{fw_x}+{fw_y}")
@@ -44,15 +44,14 @@ class Player(tk.Tk):
             '<Button-1>',
             lambda event: self.fade_out(event, fade_win)
         )
-        b_frame = ttk.Frame(fade_win, style='TFrame')
-        b_frame.pack(ipadx=fw_width * 0.1, ipady=fw_height * 0.1, fill=tk.X)
-        print(fw_width)
+        b_frame = ttk.Frame(fade_win, style='Custom.TFrame')
+        b_frame.pack(fill=tk.X)
         left_b = ttk.Button(b_frame, text='Left', style='Custom.TButton')
         left_b.pack(side=tk.LEFT)
         right_b = ttk.Button(b_frame, text='Right', style='Custom.TButton')
         right_b.pack(side=tk.RIGHT)
-        print(b_frame.winfo_geometry())
-
+        fade_win.update()
+        fade_win.geometry(f"{fw_width}x{b_frame.winfo_height()}")
         self.fiap = self.fiwtap = False
         root_win.mainloop()
 

@@ -1,0 +1,37 @@
+title: Show examlpe
+
+media:
+  - name: pic1
+    type: file
+    path: media/1.jpg
+  - name: pic2
+    type: file
+    path: media/2.jpg
+  - name: pic3
+    type: file
+    path: media/3.jpg
+  - name: vid1
+    type: file
+    path: media/video.mp4
+
+scenes:
+  - name: scene1
+    objects:
+      - name: pic1
+        layout: '0x0+0+0'
+        duration: 5        
+  - name: scene2
+    objects:
+      - name: pic2
+        layout: '0x0+0+0'
+        duration: 5
+  - name: scene3
+    objects:
+      - name: pic3
+        layout: '0x0+0+0'
+        duration: 5
+  - name: scene4
+    objects:
+      - name: vid1
+        layout: '0x0+0+0'
+        duration: 0

@@ -11,7 +11,32 @@ path_to_media = '/home/player/python/dsign/media'
 show = ['1.jpg', '2.jpg', '3.jpg', '4.jpg']
 
 
-class Player():
+class VidViewer():
+    def __init__(self):
+        pass
+
+
+class ImgViewer():
+    def __init__(self):
+        pass
+
+    def show_pic(self, parent, path_to_pic, geom):
+        pic_pil = Image.open(path_to_pic).resize(
+            (geom['width'], geom['height']), Image.ANTIALIAS
+        )
+        pic_tk = ImageTk.PhotoImage(pic_pil)
+        label = ttk.Label(parent, image=pic_tk)
+        label.image = pic_tk
+        label.place(x=geom['x'], y=geom['y'])
+
+    def load_sample_pic(self, parent):
+        pic = path.join(path_to_media, show[0])
+        geom = {'width': self.root_win_w, 'height': self.root_win_h,
+                'x': 0, 'y': 0}
+        self.show_pic(parent, pic, geom)
+
+
+class Player(ImgViewer, VidViewer):
 
     def __init__(self):
         root_win = tk.Tk()
@@ -105,21 +130,6 @@ class Player():
                 fade_wins[0].after(50, self.fade_out, event, fade_wins)
         else:
             self.fade_in(event, fade_wins)
-
-    def show_pic(self, parent, path_to_pic, geom):
-        pic_pil = Image.open(path_to_pic).resize(
-            (geom['width'], geom['height']), Image.ANTIALIAS
-        )
-        pic_tk = ImageTk.PhotoImage(pic_pil)
-        label = ttk.Label(parent, image=pic_tk)
-        label.image = pic_tk
-        label.place(x=geom['x'], y=geom['y'])
-
-    def load_sample_pic(self, parent):
-        pic = path.join(path_to_media, show[0])
-        geom = {'width': self.root_win_w, 'height': self.root_win_h,
-                'x': 0, 'y': 0}
-        self.show_pic(parent, pic, geom)
 
 
 if __name__ == '__main__':

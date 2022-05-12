@@ -20,30 +20,30 @@ class ImgViewer():
     def __init__(self):
         self.pic_pointers = False
 
-    def show_pic(self, parent, current, path_to_pic):
-        if self.pic_pointers:
-            for pointer in self.pic_pointers:
-                del pointer
-
+    def show_pic(self, parent, obj, path_to_pic):
         path_to_pic = path.join(conf.MEDIA, path_to_pic)
-        layout = current['objects'][0]['layout']
+        layout = obj['layout']
         width, height = layout.split('|')[0].split('x')
         x, y = layout.split('|')[1].split(',')
         width, height, x, y = (int(width), int(height), int(x), int(y))
-        pic_pil = Image.open(path_to_pic)
-        img_w, img_h = pic_pil.size
-        if not width or not height:
-            width, height = self.root_win_w, self.root_win_h
-        ratio = min(width / img_w, height / img_h)
-        width, height = int(img_w * ratio), int(img_h * ratio)
-        pic_pil = pic_pil.resize(
-            (width, height), Image.ANTIALIAS
-        )
+        with Image.open(path_to_pic) as pic_pil_r:
+            img_w, img_h = pic_pil_r.size
+            if not width or not height:
+                width, height = self.root_win_w, self.root_win_h
+            ratio = min(width / img_w, height / img_h)
+            width, height = int(img_w * ratio), int(img_h * ratio)
+            pic_pil = pic_pil_r.resize(
+                (width, height), Image.ANTIALIAS
+            )
         pic_tk = ImageTk.PhotoImage(pic_pil)
         label = ttk.Label(parent, image=pic_tk)
         label.image = pic_tk
         label.place(x=x, y=y)
-        self.pic_pointers = pic_tk, pic_pil
+        pic_pil_r.close()
+        del pic_pil_r
+        pic_pil.close()
+        del pic_pil
+        del pic_tk
 
 
 class Player(ImgViewer, VidViewer):
@@ -163,21 +163,24 @@ class Player(ImgViewer, VidViewer):
             data = safe_load(file)
         return(data['scenes'], data['media'])
 
-    def get_obj(self, current, media):
-        for obj in media:
-            if obj['name'] == current['objects'][0]['name']:
-                return(obj['type'], obj['path'])
+    def get_obj(self, obj, media):
+        for file in media:
+            if file['name'] == obj['name']:
+                return(file['type'], file['path'])
 
     def run_show(self):
         for child in self.show_frame.winfo_children():
             child.destroy()
         current = self.show[self.show_current]
-        obj_type, path_to_media = self.get_obj(current, self.media)
-        if obj_type == 'img':
-            self.show_pic(self.show_frame, current, path_to_media)
-        if obj_type == 'vid':
-            # call show video
-            pass
+        for obj in current['objects']:
+            obj_type, path_to_media = self.get_obj(obj, self.media)
+            if obj_type == 'img':
+                self.show_pic(self.show_frame, obj, path_to_media)
+            if obj_type == 'vid':
+                # call show video
+                pass
+        #self.show_frame.after(current['duration'] * 1000,
+        #                      lambda: self.next_scene(forw=True))
 
 
 if __name__ == '__main__':

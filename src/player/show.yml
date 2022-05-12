@@ -2,36 +2,42 @@ title: Show examlpe
 
 media:
   - name: pic1
-    type: file
-    path: media/1.jpg
+    type: img
+    path: 1.jpg
   - name: pic2
-    type: file
-    path: media/2.jpg
+    type: img
+    path: 2.jpg
   - name: pic3
-    type: file
-    path: media/3.jpg
-  - name: vid1
-    type: file
-    path: media/video.mp4
+    type: img
+    path: 3.jpg
+  - name: pic4
+    type: img
+    path: 4.jpg 
 
 scenes:
-  - name: scene1
+  - fig: 1
+    name: scene1
     objects:
       - name: pic1
-        layout: '0x0+0+0'
-        duration: 5        
-  - name: scene2
+        layout: '300x200|0,0'
+      #- name: pic2
+      #  layout: '200x200+200+0'
+    duration: 5        
+  - fig: 2
+    name: scene2
     objects:
       - name: pic2
-        layout: '0x0+0+0'
-        duration: 5
-  - name: scene3
+        layout: '0x0|0,0'
+    duration: 5
+  - fig: 3
+    name: scene3
     objects:
       - name: pic3
-        layout: '0x0+0+0'
-        duration: 5
-  - name: scene4
+        layout: '0x0|0,0'
+    duration: 5
+  - fig: 4  
+    name: scene4
     objects:
-      - name: vid1
-        layout: '0x0+0+0'
-        duration: 0
+      - name: pic4
+        layout: '0x0|0,0'
+    duration: 0

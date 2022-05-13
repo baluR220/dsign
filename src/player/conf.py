@@ -4,7 +4,9 @@ BG_COLOR = '#2e3436'
 
 BTN_COLOR = '#babdb6'
 
-MEDIA = '/home/player/python/dsign/media'
+MEDIA = 'path/to/media'
+
+SHOW = 'path/to/show'
 
 # Fade timeout in ms. Set to 0 to disable fade
 FADE_TO = 5000

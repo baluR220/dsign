@@ -8,9 +8,6 @@ from yaml import safe_load
 import conf
 
 
-path_to_show = '/home/player/python/dsign/src/player/show.yml'
-
-
 class VidViewer():
     def __init__(self):
         pass
@@ -18,7 +15,7 @@ class VidViewer():
 
 class ImgViewer():
     def __init__(self):
-        self.pic_pointers = False
+        pass
 
     def show_pic(self, parent, obj, path_to_pic):
         path_to_pic = path.join(conf.MEDIA, path_to_pic)
@@ -49,7 +46,6 @@ class ImgViewer():
 class Player(ImgViewer, VidViewer):
 
     def __init__(self):
-        ImgViewer.__init__(self)
         root_win = tk.Tk()
         self.set_styles()
         self.fiap = False
@@ -67,7 +63,7 @@ class Player(ImgViewer, VidViewer):
                 '<Button-1>',
                 lambda event: self.fade_out(event, fade_wins)
             )
-        self.show, self.media = self.get_show(path_to_show)
+        self.show, self.media = self.get_show(conf.SHOW)
         self.show_current = 0
         self.show_last = len(self.show) - 1
         self.show_frame = main_frame

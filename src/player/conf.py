@@ -16,3 +16,7 @@ FADE_IN_SP = 0.05
 
 # Fade out speed - amount of alpha added every 50 ms
 FADE_OUT_SP = 0.2
+
+MAX_ALPHA = 0.6
+
+MIN_ALPHA = 0

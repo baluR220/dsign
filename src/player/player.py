@@ -79,42 +79,46 @@ class Player(ImgViewer, VidViewer):
 
         main_frame = ttk.Frame(
             root_win, width=self.root_win_w,
-            height=self.root_win_h, style='Custom.TFrame')
+            height=self.root_win_h, style='Frame.TFrame')
         main_frame.pack()
         return(main_frame)
 
     def set_styles(self):
         ttk.Style().configure(
-            "Custom.TFrame", background=conf.BG_COLOR
+            "Frame.TFrame", background=conf.BG_COLOR
         )
         ttk.Style().configure(
-            "Custom.TButton", background=conf.BTN_COLOR
+            "Button.TFrame", background=conf.BTN_COLOR
         )
 
     def set_fade_wins(self, root_win):
-        fw_x = int(root_win.winfo_x() + self.root_win_w * 0.1)
-        fw_y = int(root_win.winfo_y() + self.root_win_h - int(
-            self.root_win_h * 0.1)
-        )
+        fw_x = root_win.winfo_x()
+        fw_y = root_win.winfo_y()
+        width = int(self.root_win_w * 0.1)
+        height = self.root_win_h
         fade_win_back = tk.Toplevel(root_win)
-        fade_win_back.geometry(f"+{fw_x}+{fw_y}")
+        fade_win_back.geometry(f"{width}x{height}+{fw_x}+{fw_y}")
 
         fade_win_forw = tk.Toplevel(root_win)
+        fw_x += int(width + self.root_win_w * 0.8)
+        fade_win_forw.geometry(f"{width}x{height}+{fw_x}+{fw_y}")
+
         fade_wins = (fade_win_back, fade_win_forw)
         for win in fade_wins:
             win.overrideredirect(True)
             win.lift(aboveThis=root_win)
-            win.wm_attributes("-alpha", 1)
+            win.wm_attributes("-alpha", conf.MAX_ALPHA)
 
-        back_b = ttk.Button(fade_win_back, text='Back', style='Custom.TButton',
-                            command=lambda: self.next_scene(back=True))
+        back_b = ttk.Frame(fade_win_back, style='Button.TFrame', width=width,
+                           height=height)
+        back_b.bind('<Button-1>',
+                    lambda event: self.next_scene(event, back=True))
         back_b.pack()
-        forw_b = ttk.Button(fade_win_forw, text='Forw', style='Custom.TButton',
-                            command=lambda: self.next_scene(forw=True))
+        forw_b = ttk.Frame(fade_win_forw, style='Button.TFrame', width=width,
+                           height=height)
+        forw_b.bind('<Button-1>',
+                    lambda event: self.next_scene(event, forw=True))
         forw_b.pack()
-        forw_b.update()
-        fw_x_forw = int(self.root_win_w * 0.9 - forw_b.winfo_width())
-        fade_win_forw.geometry(f"+{fw_x_forw}+{fw_y}")
         return(fade_wins)
 
     def fade_in(self, event, fade_wins, wait=True):
@@ -125,7 +129,7 @@ class Player(ImgViewer, VidViewer):
             for frame in fade_wins:
                 alpha = frame.wm_attributes("-alpha")
                 delay = 50
-                if alpha > 0:
+                if alpha > conf.MIN_ALPHA:
                     alpha -= conf.FADE_IN_SP
                     frame.wm_attributes("-alpha", alpha)
         self.fiap = fade_wins[0].after(delay, self.fade_in, event,
@@ -136,14 +140,14 @@ class Player(ImgViewer, VidViewer):
             fade_wins[0].after_cancel(self.fiap)
         for frame in fade_wins:
             alpha = frame.wm_attributes("-alpha")
-            if alpha < 1:
+            if alpha < conf.MAX_ALPHA:
                 alpha += conf.FADE_OUT_SP
                 frame.wm_attributes("-alpha", alpha)
                 fade_wins[0].after(50, self.fade_out, event, fade_wins)
         else:
             self.fade_in(event, fade_wins)
 
-    def next_scene(self, back=False, forw=False):
+    def next_scene(self, event=None, back=False, forw=False):
         k = 1 if forw else -1
         count = self.show_current + k
         if count < 0:

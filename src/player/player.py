@@ -12,6 +12,9 @@ class VidViewer():
     def __init__(self):
         pass
 
+    def show_vid(self, parent, obj, path_to_media):
+        pass
+
 
 class ImgViewer():
     def __init__(self):
@@ -35,12 +38,12 @@ class ImgViewer():
         pic_tk = ImageTk.PhotoImage(pic_pil)
         label = ttk.Label(parent, image=pic_tk)
         label.image = pic_tk
-        label.place(x=x, y=y)
         pic_pil_r.close()
         del pic_pil_r
         pic_pil.close()
         del pic_pil
         del pic_tk
+        return(label, (x, y))
 
 
 class Player(ImgViewer, VidViewer):
@@ -68,6 +71,7 @@ class Player(ImgViewer, VidViewer):
         self.show_current = 0
         self.show_last = len(self.show) - 1
         self.show_frame = main_frame
+        self.show_frame.update()
         self.run_show()
         root_win.mainloop()
 
@@ -172,23 +176,37 @@ class Player(ImgViewer, VidViewer):
                 return(file['type'], file['path'])
 
     def run_show(self):
-        print(self.show_current)
         for child in self.show_frame.winfo_children():
-            child.destroy()
+            self.move_away(child)
         current = self.show[self.show_current]
         duration = current['duration']
         for obj in current['objects']:
             obj_type, path_to_media = self.get_obj(obj, self.media)
             if obj_type == 'img':
-                self.show_pic(self.show_frame, obj, path_to_media)
+                obj, coord = self.show_pic(self.show_frame, obj, path_to_media)
             if obj_type == 'vid':
-                # call show video
-                pass
+                obj, coord, duration = self.show_vid(self.show_frame, obj,
+                                                     path_to_media)
+            obj.place(x=(self.show_frame.winfo_width() + 10), y=coord[1])
+            self.show_frame.update()
+            self.move_in(obj, coord[0])
         if duration:
-            self. rsap = self.show_frame.after(
+            self.rsap = self.show_frame.after(
                 duration * 1000,
                 lambda: self.next_scene(forw=True)
             )
+
+    def move_away(self, widget):
+        if widget.winfo_x() > -(widget.winfo_width() + 10):
+            widget.place_configure(x=(widget.winfo_x() - 10))
+            self.show_frame.after(10, self.move_away, widget)
+        else:
+            widget.destroy()
+
+    def move_in(self, widget, x):
+        if widget.winfo_x() > x:
+            widget.place_configure(x=(widget.winfo_x() - 10))
+            self.show_frame.after(10, self.move_in, widget, x)
 
 
 if __name__ == '__main__':

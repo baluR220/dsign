@@ -49,6 +49,7 @@ class Player(ImgViewer, VidViewer):
         root_win = tk.Tk()
         self.set_styles()
         self.fiap = False
+        self.rsap = False
         main_frame = self.set_main_wins(root_win)
         fade_wins = self.set_fade_wins(root_win)
 
@@ -148,6 +149,8 @@ class Player(ImgViewer, VidViewer):
             self.fade_in(event, fade_wins)
 
     def next_scene(self, event=None, back=False, forw=False):
+        if self.rsap:
+            self.show_frame.after_cancel(self.rsap)
         k = 1 if forw else -1
         count = self.show_current + k
         if count < 0:
@@ -169,9 +172,11 @@ class Player(ImgViewer, VidViewer):
                 return(file['type'], file['path'])
 
     def run_show(self):
+        print(self.show_current)
         for child in self.show_frame.winfo_children():
             child.destroy()
         current = self.show[self.show_current]
+        duration = current['duration']
         for obj in current['objects']:
             obj_type, path_to_media = self.get_obj(obj, self.media)
             if obj_type == 'img':
@@ -179,8 +184,11 @@ class Player(ImgViewer, VidViewer):
             if obj_type == 'vid':
                 # call show video
                 pass
-        #self.show_frame.after(current['duration'] * 1000,
-        #                      lambda: self.next_scene(forw=True))
+        if duration:
+            self. rsap = self.show_frame.after(
+                duration * 1000,
+                lambda: self.next_scene(forw=True)
+            )
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 from yaml import safe_load
 
-import conf
+import cli
 
 
 class VidViewer():
@@ -21,7 +21,6 @@ class ImgViewer():
         pass
 
     def show_pic(self, parent, obj, path_to_pic):
-        path_to_pic = path.join(conf.MEDIA, path_to_pic)
         layout = obj['layout']
         width, height = layout.split('|')[0].split('x')
         x, y = layout.split('|')[1].split(',')
@@ -56,7 +55,7 @@ class Player(ImgViewer, VidViewer):
         main_frame = self.set_main_wins(root_win)
         fade_wins = self.set_fade_wins(root_win)
 
-        if not conf.FADE_TO == 0:
+        if not conf.fade_to == 0:
             for win in fade_wins:
                 win.wm_attributes("-alpha", 0.0)
                 win.bind_all(
@@ -67,12 +66,14 @@ class Player(ImgViewer, VidViewer):
                 '<Button-1>',
                 lambda event: self.fade_out(event, fade_wins)
             )
-        self.show, self.media = self.get_show(conf.SHOW)
-        self.show_current = 0
-        self.show_last = len(self.show) - 1
-        self.show_frame = main_frame
-        self.show_frame.update()
-        self.run_show()
+        self.show, self.media = self.get_show(conf.show)
+        if self.show:
+            self.show_current = 0
+            self.show_last = len(self.show) - 1
+            self.show_frame = main_frame
+            self.show_frame.update()
+            self.run_show()
+
         root_win.mainloop()
 
     def set_main_wins(self, root_win):
@@ -90,10 +91,10 @@ class Player(ImgViewer, VidViewer):
 
     def set_styles(self):
         ttk.Style().configure(
-            "Frame.TFrame", background=conf.BG_COLOR
+            "Frame.TFrame", background=conf.bg_color
         )
         ttk.Style().configure(
-            "Button.TFrame", background=conf.BTN_COLOR
+            "Button.TFrame", background=conf.btn_color
         )
 
     def set_fade_wins(self, root_win):
@@ -112,7 +113,7 @@ class Player(ImgViewer, VidViewer):
         for win in fade_wins:
             win.overrideredirect(True)
             win.lift(aboveThis=root_win)
-            win.wm_attributes("-alpha", conf.MAX_ALPHA)
+            win.wm_attributes("-alpha", conf.max_alpha)
 
         back_b = ttk.Frame(fade_win_back, style='Button.TFrame', width=width,
                            height=height)
@@ -129,13 +130,13 @@ class Player(ImgViewer, VidViewer):
     def fade_in(self, event, fade_wins, wait=True):
         if wait:
             wait = False
-            delay = conf.FADE_TO
+            delay = conf.fade_to
         else:
             for frame in fade_wins:
                 alpha = frame.wm_attributes("-alpha")
                 delay = 50
-                if alpha > conf.MIN_ALPHA:
-                    alpha -= conf.FADE_IN_SP
+                if alpha > conf.min_alpha:
+                    alpha -= conf.fade_in_sp
                     frame.wm_attributes("-alpha", alpha)
         self.fiap = fade_wins[0].after(delay, self.fade_in, event,
                                        fade_wins, wait)
@@ -145,30 +146,34 @@ class Player(ImgViewer, VidViewer):
             fade_wins[0].after_cancel(self.fiap)
         for frame in fade_wins:
             alpha = frame.wm_attributes("-alpha")
-            if alpha < conf.MAX_ALPHA:
-                alpha += conf.FADE_OUT_SP
+            if alpha < conf.max_alpha:
+                alpha += conf.fade_out_sp
                 frame.wm_attributes("-alpha", alpha)
                 fade_wins[0].after(50, self.fade_out, event, fade_wins)
         else:
             self.fade_in(event, fade_wins)
 
     def next_scene(self, event=None, back=False, forw=False):
-        if self.rsap:
-            self.show_frame.after_cancel(self.rsap)
-        k = 1 if forw else -1
-        count = self.show_current + k
-        if count < 0:
-            self.show_current = self.show_last
-        elif count > self.show_last:
-            self.show_current = 0
-        else:
-            self.show_current = count
-        self.run_show()
+        if self.show:
+            if self.rsap:
+                self.show_frame.after_cancel(self.rsap)
+            k = 1 if forw else -1
+            count = self.show_current + k
+            if count < 0:
+                self.show_current = self.show_last
+            elif count > self.show_last:
+                self.show_current = 0
+            else:
+                self.show_current = count
+            self.run_show()
 
     def get_show(self, path_to_show):
-        with open(path_to_show) as file:
-            data = safe_load(file)
-        return(data['scenes'], data['media'])
+        if path_to_show:
+            with open(path_to_show) as file:
+                data = safe_load(file)
+            return(data['scenes'], data['media'])
+        else:
+            return(None, None)
 
     def get_obj(self, obj, media):
         for file in media:
@@ -182,8 +187,9 @@ class Player(ImgViewer, VidViewer):
         duration = current['duration']
         for obj in current['objects']:
             obj_type, path_to_media = self.get_obj(obj, self.media)
+            path_to_obj = path.join(conf.media, path_to_media)
             if obj_type == 'img':
-                obj, coord = self.show_pic(self.show_frame, obj, path_to_media)
+                obj, coord = self.show_pic(self.show_frame, obj, path_to_obj)
             if obj_type == 'vid':
                 obj, coord, duration = self.show_vid(self.show_frame, obj,
                                                      path_to_media)
@@ -210,4 +216,5 @@ class Player(ImgViewer, VidViewer):
 
 
 if __name__ == '__main__':
+    conf = cli.Conf()
     player = Player()

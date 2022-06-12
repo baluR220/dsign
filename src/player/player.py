@@ -165,7 +165,7 @@ class Player(ImgViewer, VidViewer):
                 self.show_current = 0
             else:
                 self.show_current = count
-            self.run_show()
+            self.run_show(k=k)
 
     def get_show(self, path_to_show):
         if path_to_show:
@@ -180,9 +180,9 @@ class Player(ImgViewer, VidViewer):
             if file['name'] == obj['name']:
                 return(file['type'], file['path'])
 
-    def run_show(self):
+    def run_show(self, k=1):
         for child in self.show_frame.winfo_children():
-            self.move_away(child)
+            self.move_away(child, k)
         current = self.show[self.show_current]
         duration = current['duration']
         for obj in current['objects']:
@@ -193,26 +193,27 @@ class Player(ImgViewer, VidViewer):
             if obj_type == 'vid':
                 obj, coord, duration = self.show_vid(self.show_frame, obj,
                                                      path_to_media)
-            obj.place(x=(self.show_frame.winfo_width() + 10), y=coord[1])
+            obj.place(x=k * (self.show_frame.winfo_width()), y=coord[1])
             self.show_frame.update()
-            self.move_in(obj, coord[0])
+            self.move_in(obj, coord[0], k)
         if duration:
             self.rsap = self.show_frame.after(
                 duration * 1000,
                 lambda: self.next_scene(forw=True)
             )
 
-    def move_away(self, widget):
-        if widget.winfo_x() > -(widget.winfo_width() + 10):
-            widget.place_configure(x=(widget.winfo_x() - 10))
-            self.show_frame.after(10, self.move_away, widget)
-        else:
+    def move_away(self, widget, k):
+        x = widget.winfo_x()
+        if (x < -(widget.winfo_width()) or x > self.show_frame.winfo_width()):
             widget.destroy()
+        elif x != -k * (widget.winfo_width()):
+            widget.place_configure(x=(widget.winfo_x() + -k * 10))
+            self.show_frame.after(10, self.move_away, widget, k)
 
-    def move_in(self, widget, x):
-        if widget.winfo_x() > x:
-            widget.place_configure(x=(widget.winfo_x() - 10))
-            self.show_frame.after(10, self.move_in, widget, x)
+    def move_in(self, widget, x, k):
+        if widget.winfo_x() != x:
+            widget.place_configure(x=(widget.winfo_x() + -k * 10))
+            self.show_frame.after(10, self.move_in, widget, x, k)
 
 
 if __name__ == '__main__':

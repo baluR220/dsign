@@ -10,9 +10,9 @@ media:
   - name: pic3
     type: img
     path: 3.jpg
-  - name: pic4
-    type: img
-    path: 4.jpg 
+  - name: vid1
+    type: vid
+    path: video.mp4 
 
 scenes:
   - fig: 1
@@ -22,22 +22,22 @@ scenes:
         layout: '200x200|0,0'
       - name: pic1
         layout: '200x200|200,0'
-    duration: 1        
+    duration: 5        
   - fig: 2
     name: scene2
     objects:
-      - name: pic1
+      - name: vid1
         layout: '0x0|0,0'
-    duration: 1
+    duration: 5
   - fig: 3
     name: scene3
     objects:
-      - name: pic1
+      - name: pic3
         layout: '400x400|100,100'
-    duration: 1
+    duration: 5
   - fig: 4  
     name: scene4
     objects:
-      - name: pic1
+      - name: pic2
         layout: '500x500|100,100'
-    duration: 1
+    duration: 5

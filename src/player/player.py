@@ -5,6 +5,15 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 from yaml import safe_load
 
+import gi
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst, GObject
+
+# Needed for set_window_handle():
+gi.require_version('GstVideo', '1.0')
+from gi.repository import GstVideo
+
+
 import cli
 
 
@@ -12,23 +21,38 @@ class VidViewer():
     def __init__(self):
         pass
 
-    def show_vid(self, parent, obj, path_to_media):
-        pass
+    def set_frame_handle(seld, bus, message, frame_id):
+        if not message.get_structure() is None:
+            if message.get_structure().get_name() == 'prepare-window-handle':
+                display_frame = message.src
+                display_frame.set_property('force-aspect-ratio', True)
+                display_frame.set_window_handle(frame_id)
+
+    def show_vid(self, parent, path_to_vid):
+        Gst.init(None)
+        GObject.threads_init()
+        display_frame = ttk.Frame(parent, style='Frame.TFrame')
+        frame_id = display_frame.winfo_id()
+        player = Gst.ElementFactory.make('playbin', None)
+        player.set_property('uri', 'file://%s' % path_to_vid)
+        player.set_state(Gst.State.PLAYING)
+        bus = player.get_bus()
+        bus.enable_sync_message_emission()
+        bus.connect(
+            'sync-message::element', self.set_frame_handle, frame_id
+        )
+
+        return(display_frame, player)
 
 
 class ImgViewer():
     def __init__(self):
         pass
 
-    def show_pic(self, parent, obj, path_to_pic):
-        layout = obj['layout']
-        width, height = layout.split('|')[0].split('x')
-        x, y = layout.split('|')[1].split(',')
-        width, height, x, y = (int(width), int(height), int(x), int(y))
+    def show_pic(self, parent, geom, path_to_pic):
+        width, height = geom
         with Image.open(path_to_pic) as pic_pil_r:
             img_w, img_h = pic_pil_r.size
-            if not width or not height:
-                width, height = self.root_win_w, self.root_win_h
             ratio = min(width / img_w, height / img_h)
             width, height = int(img_w * ratio), int(img_h * ratio)
             pic_pil = pic_pil_r.resize(
@@ -42,7 +66,7 @@ class ImgViewer():
         pic_pil.close()
         del pic_pil
         del pic_tk
-        return(label, (x, y))
+        return(label)
 
 
 class Player(ImgViewer, VidViewer):
@@ -52,6 +76,7 @@ class Player(ImgViewer, VidViewer):
         self.set_styles()
         self.fiap = False
         self.rsap = False
+        self.vid_player = []
         main_frame = self.set_main_wins(root_win)
         fade_wins = self.set_fade_wins(root_win)
 
@@ -183,19 +208,49 @@ class Player(ImgViewer, VidViewer):
     def run_show(self, k=1):
         for child in self.show_frame.winfo_children():
             self.move_away(child, k)
+            if self.vid_player:
+                for player in self.vid_player:
+                    player.set_state(Gst.State.NULL)
+                self.vid_player = []
         current = self.show[self.show_current]
         duration = current['duration']
         for obj in current['objects']:
             obj_type, path_to_media = self.get_obj(obj, self.media)
             path_to_obj = path.join(conf.media, path_to_media)
+            layout = obj['layout']
+            width, height = layout.split('|')[0].split('x')
+            x, y = layout.split('|')[1].split(',')
+            width, height, x, y = (int(width), int(height), int(x), int(y))
+            if not width or not height:
+                width, height = self.root_win_w, self.root_win_h
             if obj_type == 'img':
-                obj, coord = self.show_pic(self.show_frame, obj, path_to_obj)
+                geom = (width, height)
+                obj = self.show_pic(self.show_frame, geom, path_to_obj)
+                obj.place(x=k * (self.show_frame.winfo_width()), y=y)
             if obj_type == 'vid':
-                obj, coord, duration = self.show_vid(self.show_frame, obj,
-                                                     path_to_media)
-            obj.place(x=k * (self.show_frame.winfo_width()), y=coord[1])
+                obj, player = self.show_vid(
+                    self.show_frame, path_to_obj
+                )
+                obj.place(x=k * (
+                    self.show_frame.winfo_width()), y=y, width=width,
+                    height=height
+                )
+                self.vid_player.append(player)
+
             self.show_frame.update()
-            self.move_in(obj, coord[0], k)
+            self.move_in(obj, x, k)
+            if self.vid_player:
+                for player in self.vid_player:
+                    while True:
+                        try:
+                            dur = player.query_duration(Gst.Format.TIME)
+                        except Exception:
+                            pass
+                        if dur[0]:
+                            dur = int(dur[1] / 10 ** 9)
+                            break
+                    if dur > duration:
+                        duration = dur
         if duration:
             self.rsap = self.show_frame.after(
                 duration * 1000,

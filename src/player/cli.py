@@ -52,7 +52,7 @@ class Conf():
                 if not(line.startswith('#') or line == ''):
                     key, val = line.split('=')
                     key, val = key.strip(), val.strip()
-                    if getattr(self, key, False):
+                    if hasattr(self, key):
                         if key in ['media', 'show']:
                             val = self.check_path(val)
                             if not val:

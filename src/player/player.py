@@ -19,28 +19,31 @@ import cli
 
 class VidViewer():
     def __init__(self):
-        pass
+        Gst.init(None)
+        GObject.threads_init()
 
-    def set_frame_handle(seld, bus, message, frame_id):
+    def set_frame_handle(self, bus, message, frame_id):
         if not message.get_structure() is None:
             if message.get_structure().get_name() == 'prepare-window-handle':
                 display_frame = message.src
                 display_frame.set_property('force-aspect-ratio', True)
                 display_frame.set_window_handle(frame_id)
 
+    def on_segment_done(self, bus, message, player):
+        player.set_state(Gst.State.PAUSED)
+
     def show_vid(self, parent, path_to_vid):
-        Gst.init(None)
-        GObject.threads_init()
         display_frame = ttk.Frame(parent, style='Frame.TFrame')
         frame_id = display_frame.winfo_id()
         player = Gst.ElementFactory.make('playbin', None)
         player.set_property('uri', 'file://%s' % path_to_vid)
-        player.set_state(Gst.State.PLAYING)
+        player.set_state(Gst.State.PAUSED)
         bus = player.get_bus()
         bus.enable_sync_message_emission()
         bus.connect(
             'sync-message::element', self.set_frame_handle, frame_id
         )
+        bus.connect('message::segment-done', self.on_segment_done)
 
         return(display_frame, player)
 
@@ -73,6 +76,7 @@ class Player(ImgViewer, VidViewer):
 
     def __init__(self):
         root_win = tk.Tk()
+        root_win.protocol("WM_DELETE_WINDOW", lambda: self.on_exit(root_win))
         self.set_styles()
         self.fiap = False
         self.rsap = False
@@ -97,9 +101,21 @@ class Player(ImgViewer, VidViewer):
             self.show_last = len(self.show) - 1
             self.show_frame = main_frame
             self.show_frame.update()
+            types = []
+            for i in range(len(self.media)):
+                types.append(self.media[i]['type'])
+            if 'vid' in types:
+                VidViewer.__init__(self)
+            del types
             self.run_show()
 
         root_win.mainloop()
+
+    def on_exit(self, root):
+        if self.vid_player:
+            for player in self.vid_player:
+                player.set_state(Gst.State.NULL)
+        root.destroy()
 
     def set_main_wins(self, root_win):
         root_win.geometry("600x600+0+0")
@@ -207,11 +223,13 @@ class Player(ImgViewer, VidViewer):
 
     def run_show(self, k=1):
         for child in self.show_frame.winfo_children():
-            self.move_away(child, k)
+            move_player = False
             if self.vid_player:
                 for player in self.vid_player:
-                    player.set_state(Gst.State.NULL)
-                self.vid_player = []
+                    player.set_state(Gst.State.PAUSED)
+                    move_player = self.vid_player[:]
+                    self.vid_player = []
+            self.move_away(child, k, move_player)
         current = self.show[self.show_current]
         duration = current['duration']
         for obj in current['objects']:
@@ -241,6 +259,7 @@ class Player(ImgViewer, VidViewer):
             self.move_in(obj, x, k)
             if self.vid_player:
                 for player in self.vid_player:
+                    player.set_state(Gst.State.PLAYING)
                     while True:
                         try:
                             dur = player.query_duration(Gst.Format.TIME)
@@ -257,13 +276,16 @@ class Player(ImgViewer, VidViewer):
                 lambda: self.next_scene(forw=True)
             )
 
-    def move_away(self, widget, k):
+    def move_away(self, widget, k, move_player):
         x = widget.winfo_x()
         if (x < -(widget.winfo_width()) or x > self.show_frame.winfo_width()):
+            if move_player:
+                for player in move_player:
+                    player.set_state(Gst.State.NULL)
             widget.destroy()
-        elif x != -k * (widget.winfo_width()):
+        else:
             widget.place_configure(x=(widget.winfo_x() + -k * 10))
-            self.show_frame.after(10, self.move_away, widget, k)
+            self.show_frame.after(10, self.move_away, widget, k, move_player)
 
     def move_in(self, widget, x, k):
         if widget.winfo_x() != x:
